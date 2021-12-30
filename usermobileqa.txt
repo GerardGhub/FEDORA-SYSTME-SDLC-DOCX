@@ -1,0 +1,26 @@
+USE [hr_bak]
+GO
+
+/****** Object:  Table [dbo].[Users]    Script Date: 1/24/2020 1:36:08 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[Users](
+	[UserID] [bigint] IDENTITY(3,1) NOT NULL,
+	[Firstname] [nvarchar](50) NULL,
+	[Middlename] [nvarchar](50) NULL,
+	[Lastname] [nvarchar](50) NULL,
+	[Gender] [nvarchar](10) NULL,
+	[Email] [nvarchar](100) NULL,
+	[Phone] [nvarchar](50) NULL,
+	[Position] [nvarchar](100) NULL,
+	[Password] [nvarchar](255) NULL,
+	[Image] [image] NULL,
+	[IsActive] [int] NULL,
+	[IsArchived] [int] NULL,
+	[DateCreated] [datetime] NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO

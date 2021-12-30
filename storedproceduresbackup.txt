@@ -1,0 +1,268 @@
+USE [hr_bak]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_getFilterTables]    Script Date: 12/18/2019 11:37:50 AM ******/
+SET ANSI_NULLS OFF
+GO
+SET QUOTED_IDENTIFIER OFF
+GO
+ALTER PROCEDURE [dbo].[sp_getFilterTables]
+	@eTableName VARCHAR(200),
+	@eDescription VARCHAR (50)=NULL,
+	@ePk INT = NULL
+	
+AS
+BEGIN
+
+	IF (@eTableName = 'filter_section')
+	BEGIN
+		SELECT s.section_id,s.section_name
+		FROM section s
+		INNER JOIN department d ON d.department_id = s.department_id
+		WHERE s.is_active =1 and d.department_name=@eDescription
+	END
+
+		IF (@eTableName = 'filter_feedcodes')
+	BEGIN
+		SELECT s.feed_id,s.feed_code
+		FROM rdf_feed_code s
+		INNER JOIN prod_type d ON d.type_id = s.prod_type
+		WHERE s.is_active =1 and d.type_name=@eDescription
+	END
+
+
+			IF (@eTableName = 'filter_FormulaCRUD')
+	BEGIN
+		SELECT s.recipe_id,s.feed_type
+		FROM rdf_recipe s
+		INNER JOIN rdf_feed_code d ON d.feed_id = s.feed_type
+		WHERE s.is_active =1 and d.feed_type=@eDescription
+	END
+	
+	IF (@eTableName = 'filter_section_by_department_id')
+	BEGIN
+		SELECT s.section_id,s.section_name,d.department_name
+		FROM section s
+		INNER JOIN department d ON d.department_id = s.department_id
+		WHERE s.is_active =1 and s.department_id=@ePk
+	END
+
+	--myprod rdf
+		IF (@eTableName = 'filter_type_by_prod_type')
+	BEGIN
+		SELECT f.feed_id,f.feed_code,p.type_name,f.sack_color,f.feed_type
+		FROM rdf_feed_code f
+		INNER JOIN prod_type p ON p.type_id = f.prod_type
+		WHERE f.is_active =1 and f.prod_type=@ePk
+	END
+
+
+		--mygroup punyeta ka rdf
+		IF (@eTableName = 'filter_rdf_group')
+	BEGIN
+		SELECT f.group_id,f.group_name,p.category_name,f.date_added,f.added_by
+		FROM rdf_group f
+		INNER JOIN rdf_category p ON p.category_id = f.group_category
+		WHERE f.is_active =1 and f.group_category=@ePk
+	END
+
+	--my FORMULA
+			IF (@eTableName = 'filter_Formula')
+	BEGIN
+		SELECT f.recipe_id,k.type_name,p.feed_code,p.feed_type,w.item_code,w.item_description,q.category_name,x.group_name,w.quantity
+		FROM rdf_recipe f
+		LEFT JOIN rdf_feed_code p ON p.feed_id = f.feed_type
+		LEFT JOIN prod_type k ON k.type_id = p.prod_type
+		LEFT JOIN rdf_raw_materials w ON  item_id = f.item_code --add
+		LEFT JOIN rdf_category q ON q.category_id = f.category_id
+		LEFT JOIN rdf_group x ON x.group_id = f.group_id
+		WHERE f.is_active =1 and f.feed_type=@ePk
+	END
+
+
+				IF (@eTableName = 'filter_rdf_raw_materials')
+	BEGIN
+		--SELECT f.item_id,f.item_code,f.item_description
+		----FROM rdf_raw_materials f
+	---	INNER JOIN rdf_category p ON p.category_id = f.item_category
+	----WHERE f.is_active =1 and f.item_id=@ePk
+		SELECT s.item_id,s.item_description
+		FROM rdf_raw_materials s
+		INNER JOIN rdf_category d ON d.category_id = s.item_category
+		WHERE s.is_active =1 and d.category_name=@eDescription
+	END
+
+	--in FRM Group BUJE 12-17-19
+					IF (@eTableName = 'filter_rdf_group_final')
+	BEGIN
+	
+		SELECT s.group_id,s.group_name
+		FROM rdf_group s
+		INNER JOIN rdf_raw_materials d ON d.item_category = s.group_category
+		WHERE s.is_active =1 and d.item_description=@eDescription
+	END
+
+
+
+
+	--CATEGORY STORE PROC
+			IF (@eTableName = 'filter_Formula_Category')
+	BEGIN
+		SELECT f.recipe_id,f.feed_type,c.category_name,f.description,f.item_code,f.category_id
+		FROM rdf_recipe f
+		--LEFT JOIN rdf_feed_code p ON p.feed_id = f.feed_type
+		LEFT JOIN rdf_category c ON c.category_id = f.category_id
+		WHERE f.is_active =1 and f.feed_type=@ePk
+	END
+
+
+	
+	IF (@eTableName = 'filter_position_by_section_id')
+	BEGIN
+		SELECT p.position_id,p.position_name,p.section_id,s.section_name
+		FROM positions p
+		INNER JOIN section s ON s.section_id= p.section_id
+		WHERE p.is_active =1 and p.section_id=@ePk
+	END
+	
+	IF (@eTableName = 'filter_position')
+	BEGIN
+		SELECT p.position_id,p.position_name
+		FROM positions p
+		INNER JOIN section s ON s.section_id= p.section_id
+		WHERE p.is_active =1 and s.section_name=@eDescription
+	END
+	
+	IF (@eTableName = 'filter_doctors')
+	BEGIN
+		SELECT d.doctors_id,d.doctors_name
+		FROM doctors d
+		INNER JOIN clinic c ON c.clinic_id = d.clinic_id
+		WHERE d.is_active =1 and c.clinic_name=@eDescription
+	END
+	
+	IF (@eTableName = 'get_user_info')
+	BEGIN
+		SELECT u.user_id,
+			u.username,
+			u.password,
+			emp.employee_name,
+			emp.employee_number
+		FROM users u
+			LEFT OUTER JOIN 
+			(
+					SELECT employee_id,
+						employee_number,
+						(lastname + ' , ' + firstname)as employee_name
+						
+					FROM employee
+					WHERE is_active = 1
+			)emp ON u.employee_id = emp.employee_id
+		WHERE u.is_active = 1
+	END
+	
+	IF (@eTableName = 'filter_da')
+	BEGIN
+		SELECT d.da_id,
+			CONVERT(DATE,d.date_created)as date_posted,
+			d.da_number,
+			o.offense_description,
+			d.violation_incured,
+			d.date_of_incident,
+			ISNULL(d.incident_details,"NA")as incident_details,
+			d.number_of_offense,
+			d.penalty_impose,
+			d.remarks,
+			d.resolution_memo,
+			d.suspension_date,
+			d.InitialMemoReleased,
+			d.ResolutionMemoReleased,
+			d.InitialMemoPrepared,
+			d.ResolutionMemoPrepared,
+			ISNULL(d.Explanation, NULL) AS Explanation
+			
+		FROM disciplinary d
+		INNER JOIN employee e ON e.employee_id = d.employee_id
+		INNER JOIN offense o ON d.offense_id = o.offense_id
+
+		WHERE d.is_active = 1 AND d.employee_id = @ePk
+	END
+	
+	IF (@eTableName = 'get_accessible_menu')
+	BEGIN
+		SELECT ur.menu_id,av.menu_form_name
+		FROM user_rights_details ur
+		INNER JOIN available_menu av ON av.menu_id = ur.menu_id
+		WHERE ur.user_rights_id = @ePk
+		AND ur.is_active = 1
+	END
+	
+	IF (@eTableName = 'get_absent_today')
+	BEGIN
+		SELECT xxx.*,
+				tbl_att.leave_name,tbl_att.date_created as date_absent
+			FROM
+			(
+				SELECT 
+					emp.employee_id,
+					emp.employee_number,
+					lastname + ' , ' + firstname as employee_name,
+					dept.department_name
+				FROM employee emp
+				INNER JOIN department dept ON emp.department_id = dept.department_id
+				
+				WHERE emp.is_active = 1 and emp.is_resigned = 0 and emp.employee_number IS NOT NULL and
+				emp.employee_id NOT IN
+				(select Employee_ID from DTRecords where Attendance_Date = (CONVERT(DATETIME,@eDescription,101)))
+			)xxx
+
+			LEFT OUTER JOIN 
+				(SELECT employee_id,tl.leave_name,date_created 
+					from attendance_monitoring att 
+					inner join types_of_leave tl ON att.leave_id = tl.leave_id
+					where att.date_created = (CONVERT(DATETIME,@eDescription,101)))as tbl_att ON xxx.employee_id = tbl_att.employee_id
+					
+			order by xxx.department_name,xxx.employee_name
+			
+			
+		--SELECT 
+		--	emp.employee_id,
+		--	emp.employee_number,
+		--	lastname + ' , ' + firstname as employee_name,
+		--	--dtr.ID,
+		--	dept.department_name,
+		--	CASE when ISNULL(tbl_monitor.leave_name,0)=0 THEN 'NOT FILED' ELSE tbl_monitor.leave_name END AS 'leave_name',
+		--	--tbl_monitor.reason_cause,
+		--	tbl_monitor.date_created as date_absent
+		--	--ISNULL(DTR.Attendance_Date,@eDescription) as date_absent
+		--FROM employee emp
+		--INNER JOIN department dept ON emp.department_id = dept.department_id
+
+		--LEFT OUTER JOIN 
+		--	(
+		--		SELECT 
+		--			ID,
+		--			Employee_ID,Attendance_Date 
+		--			FROM DTRecords WHERE Attendance_Date = (CONVERT(DATETIME,@eDescription,101))
+		--	)as DTR ON emp.employee_id = DTR.Employee_ID
+			
+		--LEFT OUTER JOIN	
+		--	(
+		--		SELECT 
+		--			att.attendance_monitoring_id,
+		--			att.date_created,
+		--			att.employee_id,
+		--			tl.leave_name,
+		--			att.reason_cause,
+		--			CASE WHEN att.with_leave = 1 THEN 'YES' ELSE 'NO' END AS 'w_leave',
+		--			CASE WHEN att.with_medical = 1 THEN 'YES' ELSE 'NO' END AS 'w_medical'
+				 
+		--		 FROM attendance_monitoring att
+		--		 INNER JOIN types_of_leave tl ON att.leave_id = tl.leave_id 
+		--		 --WHERE att.is_active = 1 AND att.date_created = (CONVERT(DATETIME,@eDescription,101))
+		--	)as tbl_monitor ON emp.employee_id = tbl_monitor.employee_id
+	
+		-- WHERE emp.is_resigned = 0 AND emp.is_active = 1 AND DTR.ID IS NULL AND emp.employee_number IS NOT NULL
+		-- ORDER BY dept.department_name, emp.lastname
+	END
+
+END
